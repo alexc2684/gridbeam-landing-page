@@ -9,7 +9,6 @@
       "destination": "/index.html"
     }
   ],
-  "functions": {},
   "headers": [
     {
       "source": "/assets/(.*)",
