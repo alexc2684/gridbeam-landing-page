@@ -350,7 +350,7 @@ const DataVisualization = () => {
           </h2>
           
           <p className="text-xl text-utility-textLight max-w-3xl mx-auto leading-relaxed font-body">
-            Live dashboards showcasing advanced analytics implementations across utility operations,
+            Sample dashboards showcasing advanced analytics implementations across utility operations,
             delivering measurable improvements in reliability and efficiency.
           </p>
         </div>
