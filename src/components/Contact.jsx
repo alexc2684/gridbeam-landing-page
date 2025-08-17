@@ -121,7 +121,7 @@ const Contact = () => {
                   </a>
                   
                   <a 
-                    href="https://linkedin.com/in/alexchan" 
+                    href="https://linkedin.com/in/alex-chan" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="flex items-center space-x-3 text-utility-textLight hover:text-utility-primary transition-colors"

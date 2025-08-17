@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -7,13 +7,14 @@ import {
   LineElement,
   BarElement,
   ArcElement,
+  RadialLinearScale,
   Title,
   Tooltip,
   Legend,
   Filler
 } from 'chart.js'
-import { Line, Bar, Doughnut } from 'react-chartjs-2'
-import { TrendingUp, BarChart3, PieChart } from 'lucide-react'
+import { Line, Bar, Doughnut, Radar } from 'react-chartjs-2'
+import { TrendingUp, Zap, PieChart } from 'lucide-react'
 
 ChartJS.register(
   CategoryScale,
@@ -22,6 +23,7 @@ ChartJS.register(
   LineElement,
   BarElement,
   ArcElement,
+  RadialLinearScale,
   Title,
   Tooltip,
   Legend,
@@ -110,16 +112,29 @@ const DataVisualization = () => {
     return Math.round(baseValue + jitter)
   }
 
-  // Load Forecasting Data with realistic jitter
-  const baseActualData = [620, 680, 750, 725, 700, 690, 580]
-  const basePredictedData = [625, 675, 752, 722, 698, 692, 578]
+  // Generate sinusoidal load data - realistic electrical demand pattern
+  const generateSinusoidalLoad = (hours, baseLoad = 650, amplitude = 120, phaseShift = 0) => {
+    return hours.map(hour => {
+      const hourNum = parseInt(hour.split(':')[0])
+      const angle = ((hourNum + phaseShift) / 24) * 2 * Math.PI
+      const sinValue = Math.sin(angle)
+      const loadValue = baseLoad + (amplitude * sinValue)
+      return Math.round(Math.max(loadValue, 450))
+    })
+  }
+
+  const timeLabels = ['0:00', '2:00', '4:00', '6:00', '8:00', '10:00', '12:00', '14:00', '16:00', '18:00', '20:00', '22:00', '24:00']
   
+  const baseActualData = generateSinusoidalLoad(timeLabels, 650, 120, 12)
+  const basePredictedData = generateSinusoidalLoad(timeLabels, 650, 118, 12.1)
+  
+  // Load Forecast Data
   const loadForecastData = {
-    labels: ['6:00', '9:00', '12:00', '15:00', '18:00', '21:00', '24:00'],
+    labels: timeLabels,
     datasets: [
       {
-        label: 'Actual Load (MW)',
-        data: baseActualData.map(val => addJitter(val, 0.03)), // 3% variance for actual data
+        label: 'Actual Load',
+        data: baseActualData.map(val => addJitter(val, 0.03)),
         borderColor: '#003F7F',
         backgroundColor: 'rgba(0, 63, 127, 0.1)',
         tension: 0.2,
@@ -130,8 +145,8 @@ const DataVisualization = () => {
         pointRadius: 4
       },
       {
-        label: 'AI Predicted Load (MW)',
-        data: basePredictedData.map(val => addJitter(val, 0.015)), // 1.5% variance for predictions
+        label: 'AI Predicted Load',
+        data: basePredictedData.map(val => addJitter(val, 0.015)),
         borderColor: '#00A651',
         borderDash: [5, 5],
         tension: 0.2,
@@ -144,32 +159,104 @@ const DataVisualization = () => {
     ]
   }
 
-  // Regional Performance Data with realistic variance
-  const baseCurrentReliability = [99.79, 99.02, 99.78, 99.98, 99.56, 99.93, 99.99]
-  const baseHistoricalReliability = [99.65, 98.8, 99.6, 99.85, 99.4, 99.75, 99.92]
-  
-  const regionalData = {
-    labels: ['Arecibo', 'Bayamon', 'Caguas', 'Carolina', 'Mayaguez', 'Ponce', 'San Juan'],
+  // Phase Balancing Radar Chart
+  const phaseBalancingData = {
+    labels: ['Phase A', 'Phase B', 'Phase C'],
     datasets: [
       {
-        label: 'Current Reliability (%)',
-        data: baseCurrentReliability.map(val => 
-          Math.round((val + (Math.random() - 0.5) * 0.02) * 100) / 100
-        ),
-        backgroundColor: '#00A651',
-        borderRadius: 6,
-        borderSkipped: false
+        label: 'Before Optimization',
+        data: [120, 85, 95],
+        borderColor: '#DC2626',
+        backgroundColor: 'rgba(220, 38, 38, 0.2)',
+        pointBackgroundColor: '#DC2626',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: '#DC2626',
+        borderWidth: 2
       },
       {
-        label: 'Historical Average (%)',
-        data: baseHistoricalReliability.map(val => 
-          Math.round((val + (Math.random() - 0.5) * 0.015) * 100) / 100
-        ),
-        backgroundColor: '#0066CC',
-        borderRadius: 6,
-        borderSkipped: false
+        label: 'After Optimization',
+        data: [98, 99, 103],
+        borderColor: '#00A651',
+        backgroundColor: 'rgba(0, 166, 81, 0.2)',
+        pointBackgroundColor: '#00A651',
+        pointBorderColor: '#fff',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: '#00A651',
+        borderWidth: 2
       }
     ]
+  }
+
+  const phaseBalancingOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          padding: 15,
+          font: { size: 12, family: 'Inter' },
+          color: '#666666',
+          usePointStyle: true,
+          pointStyle: 'circle'
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(0, 0, 0, 0.9)',
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { family: 'Inter', size: 13 },
+        bodyFont: { family: 'Inter', size: 12 },
+        callbacks: {
+          label: function(context) {
+            const label = context.dataset.label;
+            const value = context.parsed.r;
+            return label + ': ' + value + '% load';
+          },
+          afterLabel: function(context) {
+            if (context.datasetIndex === 1) {
+              const ideal = 100;
+              const deviation = Math.abs(context.parsed.r - ideal);
+              return 'Deviation from ideal: ' + deviation.toFixed(1) + '%';
+            }
+          }
+        }
+      }
+    },
+    scales: {
+      r: {
+        angleLines: {
+          color: 'rgba(0, 0, 0, 0.1)',
+          lineWidth: 1
+        },
+        grid: {
+          color: 'rgba(0, 0, 0, 0.1)',
+          circular: true
+        },
+        pointLabels: {
+          font: { 
+            size: 14, 
+            family: 'Inter',
+            weight: '600'
+          },
+          color: '#333333',
+          padding: 10
+        },
+        ticks: {
+          font: { size: 10, family: 'Inter' },
+          color: '#666666',
+          backdropColor: 'transparent',
+          stepSize: 20,
+          callback: function(value) {
+            return value + '%';
+          }
+        },
+        suggestedMin: 60,
+        suggestedMax: 140,
+        beginAtZero: false
+      }
+    }
   }
 
   // Data Pipeline Performance
@@ -236,28 +323,12 @@ const DataVisualization = () => {
       badge: 'Real-Time AI'
     },
     {
-      id: 'regional-performance',
-      title: 'Regional Grid Reliability',
-      subtitle: 'Live monitoring across 7 service territories',
-      icon: BarChart3,
-      component: <Bar data={regionalData} options={{
-        ...chartOptions,
-        scales: {
-          ...chartOptions.scales,
-          y: {
-            ...chartOptions.scales.y,
-            min: 98,
-            max: 100,
-            title: {
-              display: true,
-              text: 'Reliability (%)',
-              font: { family: 'Inter', size: 12 },
-              color: '#666666'
-            }
-          }
-        }
-      }} />,
-      badge: 'SCADA Integration'
+      id: 'phase-balancing',
+      title: 'Phase Balancing Optimization',
+      subtitle: 'Three-phase load distribution reducing line losses',
+      icon: Zap,
+      component: <Radar data={phaseBalancingData} options={phaseBalancingOptions} />,
+      badge: 'Line Loss Reduction'
     },
     {
       id: 'pipeline-performance',
@@ -334,8 +405,8 @@ const DataVisualization = () => {
                 <div className="text-sm text-utility-textLight font-body">Daily Data Points</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-utility-primary mb-1">99.8%</div>
-                <div className="text-sm text-utility-textLight font-body">System Uptime</div>
+                <div className="text-2xl font-bold text-utility-primary mb-1">35%</div>
+                <div className="text-sm text-utility-textLight font-body">Line Loss Reduction</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-utility-primary mb-1">&lt;1min</div>
